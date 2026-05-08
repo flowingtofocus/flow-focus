@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flow Focus</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Quicksand', sans-serif;
+  background-color: #f8f7fc;
+}
+
+.blur { filter: blur(5px); }
+
+.container { display: flex; min-height: 100vh; }
+
+.main { flex: 1; padding: 40px; overflow-y: auto; }
+
+.logo { display: flex; justify-content: center; align-items: center; height: 50%; }
+.logo img { max-width: 280px; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 230px;
+  background-color: #ffffff;
+  border-left: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 50px 25px;
+}
+
+.menu-top { display: flex; flex-direction: column; gap: 45px; }
+.menu-item { cursor: pointer; }
+
+/* TODO */
+#todoPage { display: none; margin-top: 40px; }
+
+.task {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  background: white;
+}
+
+.task-left { display: flex; align-items: center; gap: 10px; }
+
+.task.done p { text-decoration: line-through; opacity: 0.6; }
+
+/* FLASHCARDS */
+#flashPage { display: none; margin-top: 40px; }
+
+/* FLASHCARD UI */
+.card {
+  width: 260px;
+  height: 160px;
+  margin: 20px auto;
+  perspective: 1000px;
+}
+
+.card-inner {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  position: relative;
+}
+
+.card.flip .card-inner { transform: rotateY(180deg); }
+
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 2px solid black;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backface-visibility: hidden;
+  background: white;
+  font-size: 16px;
+  padding: 15px;
+  text-align: center;
+}
+
+.card-back { transform: rotateY(180deg); }
+
+/* SCHEDULE */
+#schedulePage { display: none; margin-top: 40px; }
+
+.month { margin-bottom: 25px; }
+.month h3 { margin-bottom: 10px; }
+
+.event { margin-left: 10px; }
+
+/* TIME-IT */
+#timePage { display: none; margin-top: 40px; text-align: center; }
+
+.timer { font-size: 60px; margin: 20px 0; }
+
+.timer-controls button { margin: 5px; padding: 10px 20px; }
+
+/* MORE */
+#morePage { display: none; margin-top: 40px; }
+
+/* ➕ BUTTON */
+.add-btn {
+  position: fixed;
+  right: 30px;
+  bottom: 30px;
+  background: #7ea6f7;
+  color: white;
+  font-size: 26px;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  cursor: pointer;
+}
+
+/* POPUP */
+.popup {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 25px;
+  width: 320px;
+  border-radius: 12px;
+  z-index: 10;
+}
+
+.popup input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.popup button {
+  width: 100%;
+  padding: 10px;
+  background: #7ea6f7;
+  color: white;
+  border: none;
+}
+
+.close-btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  cursor: pointer;
+}
+
+.delete { cursor: pointer; color: red; }
+.edit { cursor: pointer; margin-right: 10px; }
+</style>
+</head>
+
+<body>
+
+<div id="content" class="container">
+
+  <div class="main">
+    <h1>Welcome!</h1>
+    <p id="date"></p>
+
+    <div class="logo">
+      <img src="logo.png">
+    </div>
+
+    <div id="todoPage">
+      <h2>TO-DO</h2>
+      <div id="taskList"></div>
+    </div>
+
+    <div id="flashPage">
+      <h2>FLASHCARDS</h2>
+      <div id="bundleList"></div>
+    </div>
+
+    <div id="schedulePage">
+      <h2>SCHEDULE</h2>
+      <div id="scheduleList"></div>
+    </div>
+
+    <div id="timePage">
+      <h2>TIME-IT</h2>
+      <button onclick="setMode('study')">Study</button>
+      <button onclick="setMode('break')">Break</button>
+      <div class="timer" id="timerDisplay">25:00</div>
+
+      <div>
+        Study: <input type="number" id="studyInput" value="25">
+        Break: <input type="number" id="breakInput" value="5">
+        <button onclick="updateTimes()">Set</button>
+      </div>
+
+      <div class="timer-controls">
+        <button onclick="startTimer()">▶</button>
+        <button onclick="pauseTimer()">⏸</button>
+        <button onclick="resetTimer()">⟲</button>
+      </div>
+    </div>
+
+    <div id="morePage">
+      <h2>Analytics</h2>
+      <button onclick="showAnalytics()">View Analytics</button>
+      <div id="analytics"></div>
+      <p style="margin-top:40px;">
+        Got any feedback or concerns? Email here!
+        <b>FlowingToFocus@gmail.com</b>
+      </p>
+    </div>
+
+  </div>
+
+  <div class="sidebar">
+    <div class="menu-top">
+      <div class="menu-item" onclick="openTodo()">✔ TO-DO</div>
+      <div class="menu-item" onclick="openFlash()">📁 FLASHCARDS</div>
+      <div class="menu-item" onclick="openSchedule()">📅 SCHEDULE</div>
+      <div class="menu-item" onclick="openTime()">🕒 TIME-IT!</div>
+    </div>
+    <div class="menu-item" onclick="openMore()">⚙ MORE</div>
+  </div>
+
+</div>
+
+<button class="add-btn" onclick="handleAdd()">+</button>
+
+<!-- POPUPS SAME -->
+<div class="popup" id="popup">
+  <span class="close-btn" onclick="closePopup()">❌</span>
+  <h3>New TO-DO</h3>
+  <input id="taskInput">
+  <input type="date" id="dateInput">
+  <input type="time" id="timeInput">
+  <button onclick="addTask()">Add Task</button>
+</div>
+
+<div class="popup" id="flashPopup">
+  <span class="close-btn" onclick="closeFlashPopup()">❌</span>
+  <h3>New Flashcards</h3>
+  <input id="bundleTitle">
+  <div id="cardInputs"></div>
+  <button onclick="addCardInput()">+ Add Question</button>
+  <button onclick="saveBundle()">Save Bundle</button>
+</div>
+
+<div class="popup" id="schedulePopup">
+  <span class="close-btn" onclick="closeSchedulePopup()">❌</span>
+  <h3>New Event</h3>
+  <input id="eventText">
+  <input type="date" id="eventDate">
+  <input type="time" id="eventStart">
+  <input type="time" id="eventEnd">
+  <button onclick="addEvent()">Add Event</button>
+</div>
+
+<div class="popup" id="reviewPopup">
+  <span class="close-btn" onclick="closeReview()">⬅</span>
+  <div id="reviewContent"></div>
+</div>
+
+<script>
+const dateEl = document.getElementById("date");
+dateEl.textContent = new Date().toDateString();
+
+let currentTab="todo";
+function hideAll(){todoPage.style.display="none";flashPage.style.display="none";schedulePage.style.display="none";timePage.style.display="none";morePage.style.display="none";}
+function openTodo(){currentTab="todo";hideAll();todoPage.style.display="block";}
+function openFlash(){currentTab="flash";hideAll();flashPage.style.display="block";}
+function openSchedule(){currentTab="schedule";hideAll();schedulePage.style.display="block";}
+function openTime(){currentTab="time";hideAll();timePage.style.display="block";}
+function openMore(){currentTab="more";hideAll();morePage.style.display="block";}
+
+function handleAdd(){
+  if(currentTab==="todo") openPopup();
+  else if(currentTab==="flash") openFlashPopup();
+  else if(currentTab==="schedule") openSchedulePopup();
+}
+
+/* TODO with edit */
+function openPopup(){popup.style.display="block";content.classList.add("blur");}
+function closePopup(){popup.style.display="none";content.classList.remove("blur");}
+
+function addTask(){
+  let div=document.createElement("div");
+  div.className="task";
+
+  div.innerHTML=`
+  <div class="task-left">
+    <input type="checkbox">
+    <div>
+      <p><b>${taskInput.value}</b></p>
+      <p style="color:green;">${dateInput.value} ${timeInput.value}</p>
+    </div>
+  </div>
+  <div>
+    <span class="edit" onclick="editTask(this)">✏</span>
+    <span class="delete" onclick="this.parentElement.parentElement.remove()">🗑</span>
+  </div>
+  `;
+
+  taskList.appendChild(div);
+  closePopup();
+}
+
+function editTask(el){
+  let task = el.closest(".task");
+  let text = task.querySelector("b").innerText;
+  let newText = prompt("Edit task:", text);
+  if(newText) task.querySelector("b").innerText = newText;
+}
+
+/* FLASH FIXED */
+let bundles=[],currentCards=[],index=0,missed=[];
+
+function openFlashPopup(){flashPopup.style.display="block";content.classList.add("blur");}
+function closeFlashPopup(){flashPopup.style.display="none";content.classList.remove("blur");}
+
+function addCardInput(){
+  let d=document.createElement("div");
+  d.innerHTML=`<input placeholder="Q"><input placeholder="A"><button onclick="this.parentElement.remove()">❌</button>`;
+  cardInputs.appendChild(d);
+}
+
+function saveBundle(){
+  let cards=[];
+  document.querySelectorAll("#cardInputs div").forEach(d=>{
+    cards.push({q:d.children[0].value,a:d.children[1].value});
+  });
+  bundles.push({title:bundleTitle.value,cards});
+  renderBundles();
+  closeFlashPopup();
+}
+
+function renderBundles(){
+  bundleList.innerHTML="";
+  bundles.forEach((b,i)=>{
+    let d=document.createElement("div");
+    d.className="task";
+    d.innerHTML=`
+      <strong>${b.title}</strong>
+      <div>
+        <button onclick="startReview(${i})">Review</button>
+        <button onclick="deleteBundle(${i})">🗑</button>
+      </div>`;
+    bundleList.appendChild(d);
+  });
+}
+
+function deleteBundle(i){bundles.splice(i,1);renderBundles();}
+
+function startReview(i){
+  currentCards=[...bundles[i].cards];
+  index=0;missed=[];
+  reviewPopup.style.display="block";
+  content.classList.add("blur");
+  showCard();
+}
+
+function showCard(){
+  if(index>=currentCards.length){
+    reviewContent.innerHTML = missed.length
+      ? `<h2>Review missed?</h2><button onclick="reviewMissed()">Yes</button>`
+      : `<h2>Well done!</h2>`;
+    return;
+  }
+
+  let c=currentCards[index];
+
+  reviewContent.innerHTML=`
+  <div class="card" onclick="this.classList.toggle('flip')">
+    <div class="card-inner">
+      <div class="card-face">${c.q}</div>
+      <div class="card-face card-back">${c.a}</div>
+    </div>
+  </div>
+  <br>
+  <button onclick="wrong()">❌</button>
+  <button onclick="right()">✅</button>
+  `;
+}
+
+function right(){index++;showCard();}
+function wrong(){missed.push(currentCards[index]);index++;showCard();}
+function reviewMissed(){currentCards=[...missed];index=0;missed=[];showCard();}
+function closeReview(){reviewPopup.style.display="none";content.classList.remove("blur");}
+
+/* SCHEDULE GREEN FIX */
+let events=[];
+
+function openSchedulePopup(){schedulePopup.style.display="block";content.classList.add("blur");}
+function closeSchedulePopup(){schedulePopup.style.display="none";content.classList.remove("blur");}
+
+function addEvent(){
+  events.push({
+    text:eventText.value,
+    date:new Date(eventDate.value),
+    start:eventStart.value,
+    end:eventEnd.value
+  });
+  renderSchedule();
+  closeSchedulePopup();
+}
+
+function renderSchedule(){
+  scheduleList.innerHTML="";
+  let grouped={};
+
+  events.forEach((e,i)=>{
+    let m=e.date.toLocaleString('default',{month:'long'});
+    if(!grouped[m]) grouped[m]=[];
+    grouped[m].push({...e,i});
+  });
+
+  for(let m in grouped){
+    let d=document.createElement("div");
+    d.className="month";
+    d.innerHTML=`<h3>- ${m.toUpperCase()}</h3>`;
+
+    grouped[m].forEach(ev=>{
+      let p=document.createElement("p");
+      p.className="event";
+      p.innerHTML=`
+        <span style="color:green;">
+          > ${ev.date.toDateString()} ${ev.start}-${ev.end}
+        </span>
+        ${ev.text}
+        <span onclick="deleteEvent(${ev.i})">🗑</span>
+      `;
+      d.appendChild(p);
+    });
+
+    scheduleList.appendChild(d);
+  }
+}
+
+function deleteEvent(i){events.splice(i,1);renderSchedule();}
+
+/* TIMER */
+let studyTime=1500,breakTime=300,currentTime=1500,timer=null;
+
+function setMode(m){currentTime=(m==="study"?studyTime:breakTime);updateDisplay();}
+function updateDisplay(){
+  let m=Math.floor(currentTime/60),s=currentTime%60;
+  timerDisplay.innerText=`${m}:${s<10?"0":""}${s}`;
+}
+function startTimer(){
+  if(timer) return;
+  timer=setInterval(()=>{currentTime--;if(currentTime<=0){clearInterval(timer);}updateDisplay();},1000);
+}
+function pauseTimer(){clearInterval(timer);timer=null;}
+function resetTimer(){pauseTimer();setMode("study");}
+function updateTimes(){
+  studyTime=studyInput.value*60;
+  breakTime=breakInput.value*60;
+  setMode("study");
+}
+
+/* ANALYTICS */
+function showAnalytics(){
+  analytics.innerHTML=`
+  <p>Study sessions tracked</p>
+  <p>Most used: TO-DO</p>
+  <p>Tip: Stay consistent</p>`;
+}
+</script>
+
+</body>
+</html>
