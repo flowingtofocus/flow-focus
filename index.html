@@ -407,7 +407,7 @@ function closeSchedulePopup(){schedulePopup.style.display="none";content.classLi
 function addEvent(){
   events.push({
     text:eventText.value,
-    date:new Date(eventDate.value),
+    date:new Date(eventDate.value + "T00:00:00"),
     start:eventStart.value,
     end:eventEnd.value
   });
